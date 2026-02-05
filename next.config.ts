@@ -1,6 +1,9 @@
 import { setupDevPlatform } from "@cloudflare/next-on-pages/next-dev";
 import type { NextConfig } from "next";
 
+if (process.env.NODE_ENV === "development") {
+  await setupDevPlatform();
+}
 const nextConfig: NextConfig = {
   // Edge runtime дээр ажиллахгүй байгаа Node модулиудыг Webpack-аар хаах
   webpack: (config, { isServer }) => {
