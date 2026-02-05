@@ -1,28 +1,32 @@
 // src/lib/db.ts
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import { todos } from "@/db/schema";
-
 export async function getTodos() {
   try {
     const context = getRequestContext();
-
-    // 1. Биндинг байгаа эсэхийг шалгах
     const d1 = context?.env?.DB;
 
     if (!d1) {
-      console.error(
-        "❌ D1 бааз олдсонгүй. wrangler.toml болон Bindings-ээ шалгана уу.",
-      );
+      console.warn("⚠️ D1 Binding missing. Локал орчныг шалгаж байна...");
       return [];
     }
 
     const db = drizzle(d1);
 
-    // 2. Өгөгдөл унших
-    return await db.select().from(todos).all();
+    // SQL асуулгаар хүснэгт байгаа эсэхийг баталгаажуулах
+    const tableCheck = await d1
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='todos'",
+      )
+      .get();
+
+    if (!tableCheck) {
+      console.error(
+        "❌ 'todos' хүснэгт бааз дээр олдсонгүй. Migration-аа дахин шалгана уу.",
+      );
+      return [];
+    }
+
+    return await db.select().from(todos);
   } catch (e: any) {
-    // Хэрэв хүснэгт байхгүй бол тодорхой алдаа хэлнэ
     console.error("❌ DB Error:", e.message);
     return [];
   }

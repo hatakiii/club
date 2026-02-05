@@ -1,32 +1,23 @@
 "use server";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+import { drizzle } from "drizzle-orm/d1";
+import { todos } from "@/db/schema";
 import { revalidatePath } from "next/cache";
-
-const GRAPHQL_ENDPOINT = "http://localhost:3000/api/graphql";
+import { eq } from "drizzle-orm";
 
 export async function addTodo(formData: FormData) {
   const task = formData.get("task") as string;
+  const { env } = getRequestContext();
+  const db = drizzle(env.DB);
 
-  await fetch(GRAPHQL_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: `mutation Add($task: String!) { addTodo(task: $task) { id } }`,
-      variables: { task },
-    }),
-  });
-
+  await db.insert(todos).values({ task }).run();
   revalidatePath("/");
 }
 
 export async function deleteTodo(id: number) {
-  await fetch(GRAPHQL_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: `mutation Delete($id: Int!) { deleteTodo(id: $id) }`,
-      variables: { id },
-    }),
-  });
+  const { env } = getRequestContext();
+  const db = drizzle(env.DB);
 
+  await db.delete(todos).where(eq(todos.id, id)).run();
   revalidatePath("/");
 }

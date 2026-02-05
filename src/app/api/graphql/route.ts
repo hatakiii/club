@@ -1,4 +1,4 @@
-import { ApolloServer } from "@apollo/server";
+import { ApolloServer, BaseContext } from "@apollo/server";
 import { startServerAndCreateNextHandler } from "@as-integrations/next";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { drizzle } from "drizzle-orm/d1";
@@ -7,52 +7,47 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-// 1. Context-ийн төрлийг тодорхойлно (Алдаа 2345-ыг засахад тусална)
-interface MyContext {
-  db: any; // Эсвэл Drizzle-ийн тодорхой төрлийг энд бичнэ
+// 1. Context-ийн бүтцийг тодорхойлно
+interface MyContext extends BaseContext {
+  db: any;
 }
 
 const typeDefs = `#graphql
-  type Todo {
-    id: Int
-    task: String
-    completed: Boolean
-  }
-  type Query {
-    getTodos: [Todo]
-  }
-  type Mutation {
-    addTodo(task: String!): Todo
+  type Todo { id: Int, task: String, completed: Boolean }
+  type Query { getTodos: [Todo] }
+  type Mutation { 
+    addTodo(task: String!): Todo 
     deleteTodo(id: Int!): Boolean
   }
 `;
 
-// 2. Apollo Server-т context төрлийг нь дамжуулна
+// 2. Generic төрлийг ApolloServer-т өгнө
 const server = new ApolloServer<MyContext>({
   typeDefs,
   resolvers,
 });
 
-// 3. Handler үүсгэхдээ NextRequest-ийг зааж өгнө
+// 3. Handler-ийн generic төрлийг MyContext-той ижил болгоно
 const handler = startServerAndCreateNextHandler<NextRequest, MyContext>(
   server,
   {
-    context: async (request: NextRequest) => {
+    context: async () => {
       const { env } = getRequestContext();
-      const db = drizzle(env.DB);
-      return { db };
+
+      if (!env?.DB) {
+        throw new Error("D1 Database binding missing");
+      }
+
+      return {
+        db: drizzle(env.DB),
+      };
     },
   },
 );
 
-/**
- * 4. Next.js App Router-ийн стандарт функцүүд.
- * 'as any' ашиглах нь Overload-ийн (Алдаа 2769) зөрчлийг арилгах хамгийн найдвартай арга юм.
- */
 export async function GET(request: NextRequest) {
   return handler(request);
 }
-
 export async function POST(request: NextRequest) {
   return handler(request);
 }
