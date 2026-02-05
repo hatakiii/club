@@ -1,0 +1,10 @@
+name = "my-next-app"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output"
+
+[[d1_databases]]
+binding = "DB" # Код дотор ашиглах нэр
+database_name = "platform-db"
+database_id = "fae5657e-b3e6-441e-be50-877e1482bb2e"
+migrations_dir = "drizzle"
