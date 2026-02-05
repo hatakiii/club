@@ -1,11 +1,13 @@
+// next.config.ts
 import { setupDevPlatform } from "@cloudflare/next-on-pages/next-dev";
 import type { NextConfig } from "next";
 
+// Хөгжүүлэлтийн үед Cloudflare орчныг идэвхжүүлэх (Sync байдлаар)
 if (process.env.NODE_ENV === "development") {
-  await setupDevPlatform();
+  setupDevPlatform().catch((err) => console.error(err));
 }
+
 const nextConfig: NextConfig = {
-  // Edge runtime дээр ажиллахгүй байгаа Node модулиудыг Webpack-аар хаах
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve.fallback = {
@@ -23,17 +25,5 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
-
-// Хөгжүүлэлтийн үед Cloudflare орчныг идэвхжүүлэх
-if (process.env.NODE_ENV === "development") {
-  (async () => {
-    try {
-      await setupDevPlatform();
-      console.log("🚀 Cloudflare Dev Platform initialized");
-    } catch (err) {
-      console.error("❌ Failed to initialize Cloudflare Dev Platform:", err);
-    }
-  })();
-}
 
 export default nextConfig;

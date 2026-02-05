@@ -1,21 +1,8 @@
-import { addTodo, deleteTodo } from "./actions";
+//app/page.tsx
+import { addTodo, deleteTodo } from "@/app/actions";
+import { getTodos } from "@/lib/db";
 
 export const runtime = "edge";
-
-async function getTodos() {
-  // Cloudflare орчинд дотоод URL дуудахад заримдаа бүтэн хаяг шаардлагатай
-  const res = await fetch("http://localhost:3000/api/graphql", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: `{ getTodos { id task completed } }`,
-    }),
-    next: { revalidate: 0 }, // Кэш хийхгүй
-  });
-  const { data }: any = await res.json();
-  return data?.getTodos || [];
-}
-
 export default async function Home() {
   const allTodos = await getTodos();
 
