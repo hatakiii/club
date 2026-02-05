@@ -1,30 +1,19 @@
-// src/lib/db.ts
+import { getRequestContext } from "@cloudflare/next-on-pages"; // Энэ мөрийг нэмэх
+import { drizzle } from "drizzle-orm/d1";
+import { todos } from "@/db/schema";
+
 export async function getTodos() {
   try {
+    // Cloudflare-ийн context-ийг авах
     const context = getRequestContext();
     const d1 = context?.env?.DB;
 
     if (!d1) {
-      console.warn("⚠️ D1 Binding missing. Локал орчныг шалгаж байна...");
+      console.warn("❌ D1 Binding missing");
       return [];
     }
 
     const db = drizzle(d1);
-
-    // SQL асуулгаар хүснэгт байгаа эсэхийг баталгаажуулах
-    const tableCheck = await d1
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='todos'",
-      )
-      .get();
-
-    if (!tableCheck) {
-      console.error(
-        "❌ 'todos' хүснэгт бааз дээр олдсонгүй. Migration-аа дахин шалгана уу.",
-      );
-      return [];
-    }
-
     return await db.select().from(todos);
   } catch (e: any) {
     console.error("❌ DB Error:", e.message);
