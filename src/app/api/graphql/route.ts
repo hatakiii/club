@@ -1,68 +1,111 @@
-import { ApolloServer, BaseContext } from "@apollo/server";
-import { startServerAndCreateNextHandler } from "@as-integrations/next";
+// src/app/api/graphql/route.ts
+
+import { ApolloServer, HeaderMap } from "@apollo/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import { resolvers } from "../../../lib/resolvers"; // Зам зөв эсэхийг шалгаарай
-import { NextRequest } from "next/server";
-import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin/landingPage/default";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-// 1. Context-ийн төрлийг тодорхойлно
-interface MyContext extends BaseContext {
-  db: any;
-}
-
-// 2. Schema тодорхойлно (Таны D1 хүснэгттэй яг таарч байгаа)
 const typeDefs = `#graphql
-  type Todo { id: Int, task: String, completed: Boolean }
-  type Query { getTodos: [Todo] }
-  type Mutation { 
-    addTodo(task: String!): Todo 
+  type Todo {
+    id: Int
+    task: String
+    completed: Boolean
+  }
+  type Query {
+    getTodos: [Todo]
+  }
+  type Mutation {
+    addTodo(task: String!): Todo
+    updateTodo(id: Int!, completed: Boolean!): Todo
     deleteTodo(id: Int!): Boolean
   }
 `;
 
-// 3. Server-ээ тохируулна
-const server = new ApolloServer<MyContext>({
-  typeDefs,
-  resolvers,
-  introspection: true, // Production-д схем харахыг зөвшөөрнө
-  plugins: [
-    ApolloServerPluginLandingPageLocalDefault({ embed: true }), // Хөтөч дээр Sandbox харуулна
-  ],
-});
+const resolvers = {
+  Query: {
+    getTodos: async (_: any, __: any, context: any) => {
+      const db = context.env?.DB;
+      if (!db) throw new Error("D1 Database binding missing in context");
 
-// 4. Handler үүсгэнэ
-const handler = startServerAndCreateNextHandler<NextRequest, MyContext>(
-  server,
-  {
-    context: async () => {
-      // Cloudflare-ийн орчныг авах
-      const { env } = getRequestContext();
-
-      // env.DB байгаа эсэхийг шалгах, байхгүй бол process.env-ээс хайх
-      const d1Database = env?.DB || (process.env as any).DB;
-
-      if (!d1Database) {
-        console.error("CRITICAL: D1 Database binding 'DB' is missing.");
-        throw new Error(
-          "D1 Database binding missing. Check Cloudflare Dashboard Settings.",
-        );
-      }
-
-      return {
-        db: drizzle(d1Database),
-      };
+      const { results } = await db
+        .prepare("SELECT * FROM todos ORDER BY id DESC")
+        .all();
+      return results;
     },
   },
-);
+  Mutation: {
+    addTodo: async (_: any, { task }: { task: string }, context: any) => {
+      const db = context.env?.DB;
+      return await db
+        .prepare(
+          "INSERT INTO todos (task, completed) VALUES (?, 0) RETURNING *",
+        )
+        .bind(task)
+        .first();
+    },
 
-// 5. GET болон POST хүсэлтийг экспортолно
-export async function GET(request: NextRequest) {
-  return handler(request);
+    updateTodo: async (
+      _: any,
+      { id, completed }: { id: number; completed: boolean },
+      context: any,
+    ) => {
+      const db = context.env?.DB;
+      // D1 дээр boolean нь 1 (true) эсвэл 0 (false) байдаг
+      return await db
+        .prepare("UPDATE todos SET completed = ? WHERE id = ? RETURNING *")
+        .bind(completed ? 1 : 0, id)
+        .first();
+    },
+
+    deleteTodo: async (_: any, { id }: { id: number }, context: any) => {
+      const db = context.env?.DB;
+      const { success } = await db
+        .prepare("DELETE FROM todos WHERE id = ?")
+        .bind(id)
+        .run();
+      return success;
+    },
+  },
+};
+
+const server = new ApolloServer({ typeDefs, resolvers });
+
+// Server-ийг эхлүүлэх функцийг handler дотор дуудна
+async function handler(request: NextRequest) {
+  await server.start(); // Энд заавал await хийх хэрэгтэй
+
+  const { method, headers } = request;
+  const url = new URL(request.url);
+  const headerMap = new HeaderMap();
+  headers.forEach((v, k) => headerMap.set(k, v));
+
+  const body = method === "POST" ? await request.json() : null;
+
+  const httpGraphQLResponse = await server.executeHTTPGraphQLRequest({
+    httpGraphQLRequest: {
+      body,
+      method,
+      headers: headerMap,
+      search: url.search,
+    },
+    // CLOUDFLARE ENV-ИЙГ ЭНД ДАМЖУУЛНА
+    context: async () => {
+      const requestContext = getRequestContext();
+      return { env: requestContext.env };
+    },
+  });
+
+  // Хариуг буцаах
+  const bodyString =
+    httpGraphQLResponse.body.kind === "complete"
+      ? httpGraphQLResponse.body.string
+      : "";
+
+  return new NextResponse(bodyString, {
+    status: httpGraphQLResponse.status || 200,
+    headers: Object.fromEntries(httpGraphQLResponse.headers.entries()),
+  });
 }
 
-export async function POST(request: NextRequest) {
-  return handler(request);
-}
+export { handler as GET, handler as POST };
