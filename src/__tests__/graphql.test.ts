@@ -9,7 +9,7 @@ jest.mock(
   { virtual: true },
 );
 
-import { resolvers } from "../app/api/graphql/resolvers";
+import { resolvers } from "../lib/resolvers";
 
 describe("GraphQL Resolvers - Full CRUD Test", () => {
   //--- 1. Query: getTodos Тест ---
