@@ -1,13 +1,8 @@
 name = "club"
-compatibility_date = "2026-02-06"
-compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".vercel/output"
-
-name = "club"
 compatibility_date = "2026-02-05"
 compatibility_flags = ["nodejs_compat"]
+
 [[d1_databases]]
 binding = "DB"
-database_name = "platform-db"
-database_id = "fae5657e-b3e6-441e-be50-877e1482bb2e"
-migrations_dir = "drizzle"
+database_name = "club-db"
+database_id = "df0e79e6-6488-4730-8c40-153df775ae52"

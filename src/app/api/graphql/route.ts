@@ -1,67 +1,65 @@
-// src/app/api/graphql/route.ts
-
 import { ApolloServer, HeaderMap } from "@apollo/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
+type MyEnv = {
+  DB: import("@cloudflare/workers-types").D1Database;
+};
+
 const typeDefs = `#graphql
   type Todo {
     id: Int
-    task: String
-    completed: Boolean
+    title: String
+    is_completed: Boolean
+    created_at: String
   }
   type Query {
     getTodos: [Todo]
   }
   type Mutation {
-    addTodo(task: String!): Todo
-    updateTodo(id: Int!, completed: Boolean!): Todo
+    addTodo(title: String!): Todo
+    updateTodo(id: Int!, is_completed: Boolean!): Todo
     deleteTodo(id: Int!): Boolean
   }
 `;
 
 const resolvers = {
   Query: {
-    getTodos: async (_: any, __: any, context: any) => {
-      const db = context.env?.DB;
-      if (!db) throw new Error("D1 Database binding missing in context");
-
-      const { results } = await db
-        .prepare("SELECT * FROM todos ORDER BY id DESC")
-        .all();
+    getTodos: async () => {
+      const { env } = getRequestContext() as unknown as { env: MyEnv };
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM todos ORDER BY created_at DESC",
+      ).all();
       return results;
     },
   },
   Mutation: {
-    addTodo: async (_: any, { task }: { task: string }, context: any) => {
-      const db = context.env?.DB;
-      return await db
-        .prepare(
-          "INSERT INTO todos (task, completed) VALUES (?, 0) RETURNING *",
-        )
-        .bind(task)
+    addTodo: async (_: unknown, { title }: { title: string }) => {
+      const { env } = getRequestContext() as unknown as { env: MyEnv };
+      return await env.DB.prepare(
+        "INSERT INTO todos (title) VALUES (?) RETURNING *",
+      )
+        .bind(title)
         .first();
     },
 
     updateTodo: async (
-      _: any,
-      { id, completed }: { id: number; completed: boolean },
-      context: any,
+      _: unknown,
+      { id, is_completed }: { id: number; is_completed: boolean },
     ) => {
-      const db = context.env?.DB;
-      // D1 дээр boolean нь 1 (true) эсвэл 0 (false) байдаг
-      return await db
-        .prepare("UPDATE todos SET completed = ? WHERE id = ? RETURNING *")
-        .bind(completed ? 1 : 0, id)
+      const { env } = getRequestContext() as unknown as { env: MyEnv };
+      return await env.DB.prepare(
+        "UPDATE todos SET is_completed = ? WHERE id = ? RETURNING *",
+      )
+        .bind(is_completed ? 1 : 0, id)
         .first();
     },
 
-    deleteTodo: async (_: any, { id }: { id: number }, context: any) => {
-      const db = context.env?.DB;
-      const { success } = await db
-        .prepare("DELETE FROM todos WHERE id = ?")
+    deleteTodo: async (_: unknown, { id }: { id: number }) => {
+      const { env } = getRequestContext() as unknown as { env: MyEnv };
+      const { success } = await env.DB.prepare("DELETE FROM todos WHERE id = ?")
         .bind(id)
         .run();
       return success;
@@ -69,18 +67,36 @@ const resolvers = {
   },
 };
 
-const server = new ApolloServer({ typeDefs, resolvers });
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  introspection: true,
+});
 
-// Server-ийг эхлүүлэх функцийг handler дотор дуудна
+let startPromise: Promise<void> | null = null;
+
 async function handler(request: NextRequest) {
-  await server.start(); // Энд заавал await хийх хэрэгтэй
+  if (!startPromise) {
+    startPromise = server.start();
+  }
+  await startPromise;
 
   const { method, headers } = request;
   const url = new URL(request.url);
-  const headerMap = new HeaderMap();
-  headers.forEach((v, k) => headerMap.set(k, v));
 
-  const body = method === "POST" ? await request.json() : null;
+  const headerMap = new HeaderMap();
+  headers.forEach((value, key) => {
+    headerMap.set(key, value);
+  });
+
+  let body: unknown = null;
+  if (method === "POST") {
+    try {
+      body = await request.json();
+    } catch (_e) {
+      body = null;
+    }
+  }
 
   const httpGraphQLResponse = await server.executeHTTPGraphQLRequest({
     httpGraphQLRequest: {
@@ -89,14 +105,9 @@ async function handler(request: NextRequest) {
       headers: headerMap,
       search: url.search,
     },
-    // CLOUDFLARE ENV-ИЙГ ЭНД ДАМЖУУЛНА
-    context: async () => {
-      const requestContext = getRequestContext();
-      return { env: requestContext.env };
-    },
+    context: async () => ({}),
   });
 
-  // Хариуг буцаах
   const bodyString =
     httpGraphQLResponse.body.kind === "complete"
       ? httpGraphQLResponse.body.string

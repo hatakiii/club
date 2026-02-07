@@ -4,7 +4,7 @@ import { ApolloProvider } from "@apollo/client/react";
 
 const client = new ApolloClient({
   link: new HttpLink({
-    uri: "/api/graphql", // Бидний үүсгэсэн GraphQL endpoint
+    uri: "/api/graphql",
   }),
   cache: new InMemoryCache(),
 });
