@@ -1,71 +1,10 @@
+//src/app/api/graphql/route.ts
 import { ApolloServer, HeaderMap } from "@apollo/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
 import { NextRequest, NextResponse } from "next/server";
+import { typeDefs } from "@/src/graphql/typeDefs";
+import { resolvers } from "@/src/graphql/resolvers";
 
 export const runtime = "edge";
-
-type MyEnv = {
-  DB: import("@cloudflare/workers-types").D1Database;
-};
-
-const typeDefs = `#graphql
-  type Todo {
-    id: Int
-    title: String
-    is_completed: Boolean
-    created_at: String
-  }
-  type Query {
-    getTodos: [Todo]
-  }
-  type Mutation {
-    addTodo(title: String!): Todo
-    updateTodo(id: Int!, is_completed: Boolean!): Todo
-    deleteTodo(id: Int!): Boolean
-  }
-`;
-
-const resolvers = {
-  Query: {
-    getTodos: async () => {
-      const { env } = getRequestContext() as unknown as { env: MyEnv };
-      const { results } = await env.DB.prepare(
-        "SELECT * FROM todos ORDER BY created_at DESC",
-      ).all();
-      return results;
-    },
-  },
-  Mutation: {
-    addTodo: async (_: unknown, { title }: { title: string }) => {
-      const { env } = getRequestContext() as unknown as { env: MyEnv };
-      return await env.DB.prepare(
-        "INSERT INTO todos (title) VALUES (?) RETURNING *",
-      )
-        .bind(title)
-        .first();
-    },
-
-    updateTodo: async (
-      _: unknown,
-      { id, is_completed }: { id: number; is_completed: boolean },
-    ) => {
-      const { env } = getRequestContext() as unknown as { env: MyEnv };
-      return await env.DB.prepare(
-        "UPDATE todos SET is_completed = ? WHERE id = ? RETURNING *",
-      )
-        .bind(is_completed ? 1 : 0, id)
-        .first();
-    },
-
-    deleteTodo: async (_: unknown, { id }: { id: number }) => {
-      const { env } = getRequestContext() as unknown as { env: MyEnv };
-      const { success } = await env.DB.prepare("DELETE FROM todos WHERE id = ?")
-        .bind(id)
-        .run();
-      return success;
-    },
-  },
-};
 
 const server = new ApolloServer({
   typeDefs,
