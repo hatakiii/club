@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { setupDevPlatform } from "@cloudflare/next-on-pages/next-dev";
 
 const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
@@ -17,5 +18,14 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
+
+if (process.env.NODE_ENV === "development") {
+  // IIFE (Immediately Invoked Function Expression) ашиглан ажиллуулах
+  (async () => {
+    await setupDevPlatform();
+  })().catch((err) => {
+    console.error("Cloudflare Dev Platform setup failed:", err);
+  });
+}
 
 export default nextConfig;

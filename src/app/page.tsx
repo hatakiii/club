@@ -115,13 +115,13 @@ export default function Home() {
 
       <Card className="w-full max-w-md mx-4 bg-black/60 backdrop-blur-xl border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.15)] rounded-none border-t-4 border-t-fuchsia-500 relative overflow-hidden">
         {/* Decorative Scanner Line */}
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
+        <div className="absolute top-0 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
 
         <CardHeader className="space-y-1 pb-8">
-          <CardTitle className="text-center font-black text-3xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-cyan-400 tracking-[0.2em] uppercase italic">
+          <CardTitle className="text-center font-black text-3xl text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-fuchsia-500 to-cyan-400 tracking-[0.2em] uppercase italic">
             SYSTEM_TASKS
           </CardTitle>
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
+          <div className="h-px w-full bg-linear-to-r from-transparent via-zinc-800 to-transparent" />
         </CardHeader>
 
         <div className="px-6 pb-8 relative z-10">
@@ -149,7 +149,7 @@ export default function Home() {
 
           {loading ? (
             <div className="flex flex-col items-center py-12 gap-3">
-              <Loader2 className="w-10 h-10 animate-[spin_1s_linear_infinite] text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]" />
+              <Loader2 className="w-10 h-10 animate-spin text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]" />
               <p className="text-cyan-500/70 text-xs tracking-[0.3em] font-bold animate-pulse">
                 SYNCING_DATABASE...
               </p>
