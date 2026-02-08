@@ -1,8 +1,8 @@
-//src/app/api/graphql/route.ts
 import { ApolloServer, HeaderMap } from "@apollo/server";
 import { NextRequest, NextResponse } from "next/server";
 import { typeDefs } from "@/src/graphql/typeDefs";
 import { resolvers } from "@/src/graphql/resolvers";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
 
@@ -33,6 +33,7 @@ async function handler(request: NextRequest) {
     try {
       body = await request.json();
     } catch (_e) {
+      console.log("_e", _e);
       body = null;
     }
   }
@@ -44,7 +45,17 @@ async function handler(request: NextRequest) {
       headers: headerMap,
       search: url.search,
     },
-    context: async () => ({}),
+    // КОНТЕКСТ ХЭСГИЙГ ШИНЭЧИЛЭВ:
+    context: async () => {
+      try {
+        const { env } = getRequestContext();
+        return { env };
+      } catch (e) {
+        console.log("e", e);
+        // Локал тест эсвэл орчин бүрдээгүй үед алдаа гарахаас сэргийлнэ
+        return {};
+      }
+    },
   });
 
   const bodyString =
@@ -52,9 +63,17 @@ async function handler(request: NextRequest) {
       ? httpGraphQLResponse.body.string
       : "";
 
+  // Response headers-ийг бэлдэх
+  const responseHeaders = Object.fromEntries(
+    httpGraphQLResponse.headers.entries(),
+  );
+
   return new NextResponse(bodyString, {
     status: httpGraphQLResponse.status || 200,
-    headers: Object.fromEntries(httpGraphQLResponse.headers.entries()),
+    headers: {
+      ...responseHeaders,
+      "Content-Type": "application/json", // Гүйцэд тодорхой болгож өгөх
+    },
   });
 }
 
