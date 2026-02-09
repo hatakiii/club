@@ -25,14 +25,25 @@ export const resolvers = {
 
     updateTodo: async (
       _: unknown,
-      { id, is_completed }: { id: number; is_completed: boolean },
+      {
+        id,
+        title,
+        is_completed,
+      }: { id: number; title?: string; is_completed?: boolean },
     ) => {
       const { env } = getRequestContext() as unknown as { env: MyEnv };
-      return await env.DB.prepare(
-        "UPDATE todos SET is_completed = ? WHERE id = ? RETURNING *",
+
+      const { results } = await env.DB.prepare(
+        "UPDATE todos SET title = COALESCE(?, title), is_completed = COALESCE(?, is_completed) WHERE id = ? RETURNING *",
       )
-        .bind(is_completed ? 1 : 0, id)
-        .first();
+        .bind(
+          title ?? null,
+          is_completed !== undefined ? (is_completed ? 1 : 0) : null,
+          id,
+        )
+        .all();
+
+      return results[0];
     },
 
     deleteTodo: async (_: unknown, { id }: { id: number }) => {

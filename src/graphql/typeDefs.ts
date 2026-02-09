@@ -10,7 +10,7 @@ export const typeDefs = `#graphql
   }
   type Mutation {
     addTodo(title: String!): Todo
-    updateTodo(id: Int!, is_completed: Boolean!): Todo
+    updateTodo(id: Int!, title: String, is_completed: Boolean): Todo
     deleteTodo(id: Int!): Boolean
   }
 `;

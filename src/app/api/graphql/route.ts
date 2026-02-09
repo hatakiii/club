@@ -45,14 +45,12 @@ async function handler(request: NextRequest) {
       headers: headerMap,
       search: url.search,
     },
-    // КОНТЕКСТ ХЭСГИЙГ ШИНЭЧИЛЭВ:
     context: async () => {
       try {
         const { env } = getRequestContext();
         return { env };
       } catch (e) {
         console.log("e", e);
-        // Локал тест эсвэл орчин бүрдээгүй үед алдаа гарахаас сэргийлнэ
         return {};
       }
     },
@@ -63,7 +61,6 @@ async function handler(request: NextRequest) {
       ? httpGraphQLResponse.body.string
       : "";
 
-  // Response headers-ийг бэлдэх
   const responseHeaders = Object.fromEntries(
     httpGraphQLResponse.headers.entries(),
   );
@@ -72,7 +69,7 @@ async function handler(request: NextRequest) {
     status: httpGraphQLResponse.status || 200,
     headers: {
       ...responseHeaders,
-      "Content-Type": "application/json", // Гүйцэд тодорхой болгож өгөх
+      "Content-Type": "application/json",
     },
   });
 }
