@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { gql } from "@apollo/client/core";
@@ -140,31 +141,43 @@ export default function Home() {
   });
 
   return (
-    <div className="flex justify-center items-start min-h-screen pt-12 bg-[#050505] text-zinc-100 selection:bg-cyan-500 selection:text-black font-mono">
-      {/* Background Glow Effect */}
+    <div className="flex justify-center items-start min-h-screen pt-12 bg-[#020202] text-zinc-100 selection:bg-fuchsia-500 selection:text-white font-mono">
+      {/* Сайжруулсан арын гэрэл (Background Glow) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-fuchsia-600/20 blur-[120px] rounded-full" />
-        <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-cyan-600/20 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-fuchsia-900/10 blur-[150px] rounded-full animate-pulse" />
+        <div
+          className="absolute bottom-[0%] right-[-10%] w-[40%] h-[60%] bg-cyan-900/10 blur-[150px] rounded-full animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
       </div>
 
-      <Card className="w-full max-w-md mx-4 bg-black/60 backdrop-blur-xl border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.15)] rounded-none border-t-4 border-t-fuchsia-500 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
+      <Card className="w-full max-w-md mx-4 bg-black/40 backdrop-blur-2xl border-zinc-800 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-xl border-t-1 border-white/10 relative overflow-hidden">
+        {/* Scanning Line Effect */}
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-20 animate-[scan_3s_linear_infinite]" />
 
         <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="text-center font-black text-3xl text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-fuchsia-500 to-cyan-400 tracking-[0.2em] uppercase italic">
-            SYSTEM_TASKS
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] text-cyan-500 font-bold tracking-[0.5em] animate-pulse">
+              TERMINAL_ACTIVE
+            </span>
+            <span className="text-[10px] text-zinc-600 font-bold">
+              LOC: 127.0.0.1
+            </span>
+          </div>
+          <CardTitle className="text-center font-black text-4xl text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-500 tracking-tighter italic">
+            TODO<span className="text-fuchsia-500">_</span>OS
           </CardTitle>
 
-          {/* Tab Filter Navigation */}
-          <div className="flex justify-center gap-2 pt-4">
+          {/* Сайжруулсан Tab Filter */}
+          <div className="flex justify-center gap-1 pt-6">
             {(["all", "active", "completed"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`text-[10px] px-3 py-1 border transition-all duration-300 uppercase tracking-widest ${
+                className={`text-[9px] px-4 py-1.5 transition-all duration-300 uppercase tracking-[0.2em] font-bold rounded-sm ${
                   filter === f
-                    ? "border-fuchsia-500 text-fuchsia-500 bg-fuchsia-500/10 shadow-[0_0_10px_rgba(217,70,239,0.2)]"
-                    : "border-zinc-800 text-zinc-500 hover:border-zinc-600"
+                    ? "bg-zinc-100 text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                    : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900"
                 }`}
               >
                 {f}
@@ -174,133 +187,82 @@ export default function Home() {
         </CardHeader>
 
         <div className="px-6 pb-8 relative z-10">
-          <div className="flex gap-2 mb-10">
+          <div className="group flex gap-2 mb-8 p-1 bg-zinc-900/50 border border-zinc-800 focus-within:border-fuchsia-500/50 transition-all">
             <Input
-              className="bg-black/40 border-zinc-800 focus-visible:ring-fuchsia-500 focus-visible:border-fuchsia-500 rounded-none border-l-2 border-l-cyan-500 placeholder:text-zinc-600 text-cyan-50"
-              placeholder="INPUT_NEW_DATA..."
+              className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-zinc-700 text-cyan-50"
+              placeholder="NEW_TASK_ENTRY..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              disabled={addLoading}
             />
             <Button
               onClick={handleAdd}
               disabled={addLoading || !text.trim()}
-              className="bg-transparent border border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold px-6 transition-all duration-300 rounded-none shadow-[0_0_10px_rgba(217,70,239,0.3)]"
+              className="bg-zinc-100 text-black hover:bg-fuchsia-500 hover:text-white font-bold transition-all duration-300 rounded-none"
             >
               {addLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "EXECUTE"
+                "ADD"
               )}
             </Button>
           </div>
 
-          {loading ? (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <Loader2 className="w-10 h-10 animate-spin text-cyan-500" />
-              <p className="text-cyan-500/70 text-xs tracking-[0.3em] font-bold animate-pulse">
-                SYNCING_DATABASE...
-              </p>
-            </div>
-          ) : error ? (
-            <div className="p-4 bg-red-950/20 border-l-4 border-red-600 text-red-400 text-xs font-bold tracking-widest uppercase">
-              [ERROR]:: {error.message}
-            </div>
-          ) : (
-            <ul className="space-y-4">
+          <ul className="space-y-2">
+            <AnimatePresence mode="popLayout">
               {filteredTodos?.map((todo) => (
-                <li
+                <motion.li
+                  layout
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
                   key={todo.id}
-                  className="group flex items-center justify-between p-4 border border-zinc-800 bg-zinc-900/30 hover:bg-cyan-950/10 hover:border-cyan-500/50 transition-all duration-300 relative overflow-hidden"
+                  className="group flex items-center justify-between p-3 border border-zinc-800/50 bg-zinc-900/20 hover:bg-white/[0.02] hover:border-zinc-600 transition-all duration-200"
                 >
-                  <div className="absolute inset-y-0 left-0 w-1 bg-fuchsia-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                  <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                  <div className="flex items-center gap-3 flex-1 overflow-hidden">
                     <Checkbox
                       checked={todo.is_completed}
                       onCheckedChange={() =>
                         handleToggle(todo.id, todo.is_completed)
                       }
-                      className="w-5 h-5 border-zinc-700 rounded-none data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
+                      className="border-zinc-700 data-[state=checked]:bg-fuchsia-500 data-[state=checked]:border-fuchsia-500"
                     />
 
-                    {editingId === todo.id ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <input
-                          autoFocus
-                          className="bg-zinc-800/50 text-cyan-400 text-sm p-1 flex-1 outline-none border-b border-fuchsia-500 font-mono"
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleSaveEdit(todo.id)
-                          }
-                        />
-                        <button
-                          onClick={() => handleSaveEdit(todo.id)}
-                          className="text-green-500 hover:text-green-400 transition-colors"
-                        >
-                          <Check size={18} />
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="text-red-500 hover:text-red-400 transition-colors"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <span
-                        className={`text-sm font-bold tracking-wider transition-all truncate cursor-pointer ${
-                          todo.is_completed
-                            ? "line-through text-zinc-600 opacity-40 italic"
-                            : "text-zinc-200 group-hover:text-cyan-400"
-                        }`}
-                        onClick={() => handleStartEdit(todo.id, todo.title)}
-                      >
-                        {todo.title}
-                      </span>
-                    )}
+                    <span
+                      className={`text-sm tracking-wide transition-all truncate ${
+                        todo.is_completed
+                          ? "text-zinc-600 line-through"
+                          : "text-zinc-300"
+                      }`}
+                    >
+                      {todo.title}
+                    </span>
                   </div>
 
-                  <div className="flex gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-all">
-                    {editingId !== todo.id && (
-                      <button
-                        onClick={() => handleStartEdit(todo.id, todo.title)}
-                        className="p-1 text-zinc-500 hover:text-cyan-400 transition-colors"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                    )}
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleDelete(todo.id)}
-                      className="p-1 text-zinc-500 hover:text-red-500 transition-colors"
+                      className="p-2 text-zinc-600 hover:text-red-400"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
-                </li>
+                </motion.li>
               ))}
-
-              {filteredTodos?.length === 0 && (
-                <div className="text-center py-16 border border-dashed border-zinc-800 flex flex-col items-center gap-4 opacity-40">
-                  <ClipboardList className="w-12 h-12 text-zinc-700" />
-                  <p className="text-zinc-500 text-[10px] tracking-[0.4em] uppercase">
-                    No_active_sequences_found
-                  </p>
-                </div>
-              )}
-            </ul>
-          )}
+            </AnimatePresence>
+          </ul>
         </div>
 
-        <div className="px-6 py-2 bg-zinc-900/50 flex justify-between items-center border-t border-zinc-800">
-          <div className="text-[10px] text-zinc-600 tracking-tighter">
-            STATUS: ONLINE
+        <div className="px-6 py-3 bg-zinc-950/80 flex justify-between items-center border-t border-zinc-900">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+              System_Optimal
+            </span>
           </div>
-          <div className="text-[10px] text-zinc-600 tracking-tighter italic">
-            V.2.1.0-STABLE
-          </div>
+          <span className="text-[9px] text-zinc-700 font-mono">
+            CPU_USAGE: 2.4%
+          </span>
         </div>
       </Card>
     </div>
