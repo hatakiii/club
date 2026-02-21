@@ -177,7 +177,7 @@ export default function Home() {
                 className={`text-[9px] px-4 py-1.5 transition-all duration-300 uppercase tracking-[0.2em] font-bold rounded-sm ${
                   filter === f
                     ? "bg-zinc-100 text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                    : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900"
+                    : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800"
                 }`}
               >
                 {f}
