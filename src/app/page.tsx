@@ -140,6 +140,7 @@ export default function Home() {
     return true;
   });
 
+  console.log("Hello World");
   return (
     <div className="flex justify-center items-start min-h-screen pt-12 bg-[#020202] text-zinc-100 selection:bg-fuchsia-500 selection:text-white font-mono">
       {/* Сайжруулсан арын гэрэл (Background Glow) */}
